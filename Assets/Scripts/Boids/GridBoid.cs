@@ -6,8 +6,8 @@ using DragonSpace.Grids;
 public class GridBoid : MonoBehaviour, IGridElt
 {
     #region Grid element implementation
-    public float Xf => pos.x - halfWidth;  //This is a decent argument for using center pt
-    public float Yf => pos.y - halfHeight;
+    public float LeftX => pos.x - halfWidth;  //This is a decent argument for using center pt
+    public float BottomY => pos.y - halfHeight;
     public int Width { get; private set; }
     public int Height { get; private set; }
     public IGridElt NextElt { get; set; } = null;
@@ -78,19 +78,19 @@ public class GridBoid : MonoBehaviour, IGridElt
     void Move()
     {
         UnityEngine.Profiling.Profiler.BeginSample("Move");
-        float oldX = Xf;
-        float oldY = Yf;
+        float oldX = LeftX;
+        float oldY = BottomY;
         pos += facing * (sets.speed * Time.deltaTime);
         tf.position = pos.ToV3();
-        grid.Move(this, oldX, oldY, Xf, Yf);
+        grid.Move(this, oldX, oldY, LeftX, BottomY);
         UnityEngine.Profiling.Profiler.EndSample();
     }
 
     void FindFlockmates()
     {
         int r = sets.radius;
-        float x = Xf + facing.x * 8;
-        float y = Yf + facing.y * 8;
+        float x = LeftX + facing.x * 8;
+        float y = BottomY + facing.y * 8;
         //adding 2 here so the radius is from the bounding box's edges
         flock = grid.Query(x - r, y - r, x + 2 + r, y + 2 + r, ID); //TODO: variable sizes (not 2)
     }
@@ -144,8 +144,8 @@ public class GridBoid : MonoBehaviour, IGridElt
         //show flockmates
         Gizmos.color = Color.yellow;
         int r = sets.radius;
-        float x = Xf + facing.x * 8;
-        float y = Yf + facing.y * 8;
+        float x = LeftX + facing.x * 8;
+        float y = BottomY + facing.y * 8;
         flock = grid.Query(x - r, y - r, x + 2 + r, y + 2 + r, ID); //TODO: variable sizes (not 2)
         for (int i = 0; i < flock.Count; ++i)
         {

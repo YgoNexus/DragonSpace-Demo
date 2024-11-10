@@ -1,20 +1,20 @@
 ﻿namespace DragonSpace.Grids
 {
-    using DragonSpace.Lists;
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using DragonSpace.Structs;
-
     public class LooseDoubleGrid
     {
-        private CoarseGrid grid;
+        FreeLinkedList<LooseCell>[][] coarseGrid;
+        //private CoarseCell[][] coarseGrid;
 
-        private readonly LooseGridRow[] rows;
+        private readonly LooseCell[][] grid;
 
         /// <summary>
         /// the size of the grid
         /// </summary>
-        private readonly int _width, _height;
+        private readonly int boundWidth, boundHeight;
 
         // Stores the number of columns and rows in the grid.
         private readonly int _numRows, _numCols;
@@ -32,37 +32,46 @@
         private readonly float _invCoarseWidth, _invCoarseHeight;
 
         public LooseDoubleGrid(float cellWidth, float cellHeight, float coarseWidth, float coarseHeight,
-            int gridWidth, int gridHeight)
+            int boundWidth, int boundHeight)
         {
             if (cellWidth > coarseWidth || cellHeight > coarseHeight)
             {
                 throw new ArgumentException("Coarse cells must be (significantly) larger than cell size");
             }
-
-            _width = gridWidth;
-            _height = gridHeight;
-            _numRows = (int)(gridHeight / cellHeight) + 1;
-            _numCols = (int)(gridWidth / cellWidth) + 1;
+            this.boundWidth = boundWidth;
+            this.boundHeight = boundHeight;
+            _numRows = (int)( boundHeight / cellHeight ) + 1;
+            _numCols = (int)( boundWidth / cellWidth ) + 1;
             _invCellWidth = 1 / cellWidth;
             _invCellHeight = 1 / cellHeight;
-            _coarseRows = (int)(gridHeight / coarseHeight) + 1;
-            _coarseCols = (int)(gridWidth / coarseWidth) + 1;
+            _coarseRows = (int)( boundHeight / coarseHeight ) + 1;
+            _coarseCols = (int)( boundWidth / coarseWidth ) + 1;
             _invCoarseWidth = 1 / coarseWidth;
             _invCoarseHeight = 1 / coarseHeight;
 
             //init rows
-            rows = new LooseGridRow[_numRows];
+            grid = new LooseCell[_numRows][];
             //init columns
             for (int i = 0; i < _numRows; i++)
             {
-                rows[i] = new LooseGridRow(_numCols);
-                for (int j = 0; j < rows[i].cells.Length; j++)
+                grid[i] = new LooseCell[_numCols];
+                for (int j = 0; j < grid[i].Length; j++)
                 {
-                    rows[i].cells[j] = new LooseCell();
+                    grid[i][j] = new LooseCell();
                 }
             }
 
-            grid = new CoarseGrid(_coarseCols, _coarseRows);
+            //coarseGrid = new CoarseGrid(_coarseCols, _coarseRows);
+
+            coarseGrid = new FreeLinkedList<LooseCell>[_coarseRows][];
+            for (int y = 0; y < _coarseRows; y++)
+            {
+                coarseGrid[y] = new FreeLinkedList<LooseCell>[_coarseCols];
+                for (int x = 0; x < _coarseCols; x++)
+                {
+                    coarseGrid[y][x] = new(_coarseCols * _coarseRows);
+                }
+            }
         }
 
         #region Public methods
@@ -72,8 +81,8 @@
         /// <param name="obj">The object to insert</param>
         public void Insert(IGridElt obj)
         {
-            int xIdx = GridLocalToCellCol(obj.Xf);
-            int yIdx = GridLocalToCellRow(obj.Yf);
+            int xIdx = GridLocalToCellCol(obj.LeftX);
+            int yIdx = GridLocalToCellRow(obj.BottomY);
             InsertToCell(obj, xIdx, yIdx);
         }
 
@@ -85,27 +94,24 @@
         /// <param name="yIdx">The row index of the cell</param>
         private void InsertToCell(IGridElt elt, int xIdx, int yIdx)
         {
-            LooseCell cell = rows[yIdx].cells[xIdx];
-
             //if the cell is empty, initialize the bounds to match the element
-            if (cell.FirstElt == null)
+            if (grid[yIdx][xIdx].FirstElt == null)
             {
-                cell.Push(elt);
-                cell.lft = (int)elt.Xf;
-                cell.btm = (int)elt.Yf;
-                cell.rgt = cell.lft + elt.Width;
-                cell.top = cell.btm + elt.Height;
+                grid[yIdx][xIdx].Push(elt);
+                grid[yIdx][xIdx].lft = (int)elt.LeftX;
+                grid[yIdx][xIdx].btm = (int)elt.BottomY;
+                grid[yIdx][xIdx].rgt = grid[yIdx][xIdx].lft + elt.Width;
+                grid[yIdx][xIdx].top = grid[yIdx][xIdx].btm + elt.Height;
 
                 //insert into the tight cells it overlaps
-                InsertToCoarseGrid(cell);
+                InsertToCoarseGrid(yIdx, xIdx);
             }
             else    //otherwise, see if the bounds need to change to fit the element
             {
-                cell.Push(elt);
-                ExpandCell(cell, elt);
+                grid[yIdx][xIdx].Push(elt);
+                ExpandCell(yIdx, xIdx, elt);
             }
         }
-
         /// <summary>
         /// Removes an element from the grid. The <see cref="IUGridElt"/> of the object must give
         /// the same position where the element is currently in the grid
@@ -113,30 +119,26 @@
         /// <param name="obj">The object to remove</param>
         public void Remove(IGridElt obj)
         {
-            int xIdx = GridLocalToCellCol(obj.Xf);
-            int yIdx = GridLocalToCellRow(obj.Yf);
+            int xIdx = GridLocalToCellCol(obj.LeftX);
+            int yIdx = GridLocalToCellRow(obj.BottomY);
             RemoveFromCell(obj, xIdx, yIdx);
         }
-
         private void RemoveFromCell(IGridElt obj, int xIdx, int yIdx)
-        {            
-            LooseCell cell = rows[yIdx].cells[xIdx];
-
-            IGridElt elt = cell.FirstElt;
+        {
+            IGridElt elt = grid[yIdx][xIdx].FirstElt;
             IGridElt prevElt = null;
 
-            while (elt.ID != obj.ID)
+            while (elt != null && elt.ID != obj.ID)
             {
                 prevElt = elt;
                 elt = elt.NextElt;
             }
 
             if (prevElt == null)
-                cell.Pop();
+                grid[yIdx][xIdx].Pop();
             else
                 prevElt.NextElt = elt.NextElt;
         }
-
         /// <summary>
         /// Moves an element in the grid from the former position to the new one.
         /// </summary>
@@ -152,7 +154,7 @@
             int newCol = GridLocalToCellCol(toX);
             int newRow = GridLocalToCellRow(toY);
 
-            ref LooseGridRow row = ref rows[oldRow];
+            //ref LooseGridRow row = ref looseGridRowArr[oldRow];
 
             if (oldCol != newCol || oldRow != newRow)
             {
@@ -162,7 +164,7 @@
             else
             {
                 //just expand the cell if necessary, we can contract it later
-                ExpandCell(rows[oldRow].cells[oldCol], obj);
+                ExpandCell(oldRow, oldCol, obj);
             }
         }
 
@@ -189,19 +191,17 @@
             {
                 for (int x = minX; x <= maxX; ++x)
                 {
-                    FreeLinkedList<LooseCell> cells = grid.cells[y][x].looseCells;
-                    if (cells.Count == 0)
+                    if (coarseGrid[y][x].Count == 0)
                         continue;
 
                     //go through the linked list of loose cells
-                    FreeLinkedList<LooseCell>.FreeElement cNode = cells.FirstItem;
-                    for (int i = cells.Count - 1; i >= 0; --i)
+                    FreeLinkedList<LooseCell>.FreeElement cNode = coarseGrid[y][x].FirstItem;
+                    for (int i = coarseGrid[y][x].Count - 1; i >= 0; --i)
                     {
-                        LooseCell cell = cNode.element;
-                        if (RectOverlap(in query, in cell))
+                        if (RectOverlap(in query, in cNode.element))
                         {
                             // check elements in cell
-                            IGridElt elt = cell.FirstElt;
+                            IGridElt elt = cNode.element.FirstElt;
                             while (elt != null)
                             {
                                 if (RectOverlap(in query, in elt) && elt.ID != omitEltID)
@@ -209,7 +209,7 @@
                                 elt = elt.NextElt;
                             }
                         }
-                        cNode = cells[cNode.next];
+                        cNode = coarseGrid[y][x][cNode.next];
                     }
                 }
             }
@@ -220,6 +220,7 @@
         /// Contracts all the loose cell boundaries and removes them from coarse cells.
         /// Run at the end of every frame or update
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void TightenUp()
         {
             //remove all loose cells from the coarse grid
@@ -227,19 +228,17 @@
             {
                 for (int x = 0; x < _coarseCols; ++x)
                 {
-                    grid.cells[y][x].looseCells.Clear();
+                    coarseGrid[y][x].Clear();
                 }
             }
 
             //contract all loose cells, then add back to the coarse grid
-            for (int i = rows.Length - 1; i >= 0; i--)
+            for (int i = grid.Length - 1; i >= 0; i--)
             {
-                LooseCell[] row = rows[i].cells;
-                for (int j = row.Length - 1; j >= 0; j--)
+                for (int j = grid[i].Length - 1; j >= 0; j--)
                 {
-                    LooseCell cell = row[j];
-                    ContractCell(cell);
-                    InsertToCoarseGrid(cell);
+                    ContractCell(i, j);
+                    InsertToCoarseGrid(i, j);
                 }
             }
         }
@@ -249,164 +248,172 @@
         /// Then traverses the whole grid and calls <see cref="IUniformGridVisitor.Cell(int, int)"/>
         /// on any non-empty cells.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Traverse(ILooseGridVisitor visitor)
         {
-            visitor.CoarseGrid(_width, _height, 1f / _invCoarseWidth, 1f / _invCoarseHeight);
+            visitor.CoarseGrid(boundWidth, boundHeight, 1f / _invCoarseWidth, 1f / _invCoarseHeight);
 
-            visitor.LooseGrid(_width, _height, 1f / _invCellWidth, 1f / _invCellHeight);
+            visitor.LooseGrid(boundWidth, boundHeight, 1f / _invCellWidth, 1f / _invCellHeight);
 
             //go through the grid
             for (int y = 0; y < _coarseRows; ++y)
             {
                 for (int x = 0; x < _coarseCols; ++x)
                 {
-                    visitor.CoarseCell(grid.cells[y][x].looseCells.Count, 
-                        x, y, 1f/ _invCoarseWidth, 1f / _invCoarseHeight);
+                    visitor.CoarseCell(/*grid.cells[y][x].looseCells.Count*/   233,
+                        x, y, 1f / _invCoarseWidth, 1f / _invCoarseHeight);
                 }
             }
 
-            for (int i = rows.Length - 1; i >= 0; i--)
+            for (int i = grid.Length - 1; i >= 0; i--)
             {
-                LooseCell[] row = rows[i].cells;
-                for (int j = row.Length - 1; j >= 0; j--)
+                for (int j = grid[i].Length - 1; j >= 0; j--)
                 {
-                    LooseCell cell = row[j];
-                    visitor.LooseCell(
-                        cell.FirstElt, new AABB(cell.lft, cell.top, cell.rgt, cell.btm));
+                    LooseCell cell = grid[i][j];
+                    visitor.LooseCell(cell.FirstElt, new AABB(cell.lft, cell.top, cell.rgt, cell.btm));
                 }
             }
         }
         #endregion
 
         #region Private methods
-        private void InsertToCoarseGrid(LooseCell cell)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void InsertToCoarseGrid(int row, int col)
         {
-            int minX = GridLocalToCoarseCol(cell.lft);
-            int minY = GridLocalToCoarseRow(cell.btm);
-            int maxX = GridLocalToCoarseCol(cell.rgt);
-            int maxY = GridLocalToCoarseRow(cell.top);
+            int minX = GridLocalToCoarseCol(grid[row][col].lft);
+            int minY = GridLocalToCoarseRow(grid[row][col].btm);
+            int maxX = GridLocalToCoarseCol(grid[row][col].rgt);
+            int maxY = GridLocalToCoarseRow(grid[row][col].top);
 
             for (int y = minY; y <= maxY; ++y)
             {
                 for (int x = minX; x <= maxX; ++x)
                 {
-                    grid.cells[y][x].looseCells.InsertFirst(cell);
+                    coarseGrid[y][x].InsertFirst(grid[row][col]);
                 }
             }
         }
-
-        private void ExpandCell(LooseCell cell, IGridElt elt)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ExpandCell(int row, int col, IGridElt elt)
         {
-            int xMin1 = GridLocalToCoarseCol(cell.lft);
-            int yMin1 = GridLocalToCoarseRow(cell.btm);
-            int xMax1 = GridLocalToCoarseCol(cell.rgt);
-            int yMax1 = GridLocalToCoarseRow(cell.top);
+            int xMin1 = GridLocalToCoarseCol(grid[row][col].lft);
+            int yMin1 = GridLocalToCoarseRow(grid[row][col].btm);
+            int xMax1 = GridLocalToCoarseCol(grid[row][col].rgt);
+            int yMax1 = GridLocalToCoarseRow(grid[row][col].top);
 
-            int eLft = (int)elt.Xf;
-            int eBtm = (int)elt.Yf;
+            int eLft = (int)elt.LeftX;
+            int eBtm = (int)elt.BottomY;
 
-            cell.lft = Math.Min(cell.lft, eLft);
-            cell.btm = Math.Min(cell.btm, eBtm);
-            cell.rgt = Math.Max(cell.rgt, eLft + elt.Width);
-            cell.top = Math.Max(cell.top, eBtm + elt.Height);
+            grid[row][col].lft = Math.Min(grid[row][col].lft, eLft);
+            grid[row][col].btm = Math.Min(grid[row][col].btm, eBtm);
+            grid[row][col].rgt = Math.Max(grid[row][col].rgt, eLft + elt.Width);
+            grid[row][col].top = Math.Max(grid[row][col].top, eBtm + elt.Height);
 
-            int xMax2 = GridLocalToCoarseCol(cell.rgt);
-            int yMax2 = GridLocalToCoarseRow(cell.top);
+            int xMax2 = GridLocalToCoarseCol(grid[row][col].rgt);
+            int yMax2 = GridLocalToCoarseRow(grid[row][col].top);
 
             //insert into new coarse cells
-            int xdiff = (xMax2 > xMax1) ? 1 : 0;
+            int xdiff = ( xMax2 > xMax1 ) ? 1 : 0;
             if (xMax1 != xMax2 || yMax1 != yMax2)
             {
                 for (int y = yMin1; y <= yMax2; ++y)
                 {
                     //if in an old row, only do the new columns,
                     //otherwise do the whole row
-                    int x = (y > yMax1) ? xMin1 : xMax1 + xdiff;
+                    int x = ( y > yMax1 ) ? xMin1 : xMax1 + xdiff;
                     for (; x <= xMax2; ++x)
                     {
-                        grid.cells[y][x].looseCells.InsertFirst(cell);
+                        coarseGrid[y][x].InsertFirst(grid[row][col]);
                     }
                 }
             }
-        }
 
-        private void ContractCell(LooseCell cell)
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ContractCell(int row, int col)
         {
-            cell.lft = cell.btm = int.MaxValue;
-            cell.rgt = cell.top = int.MinValue;
-            IGridElt elt = cell.FirstElt;
+            grid[row][col].lft = grid[row][col].btm = int.MaxValue;
+            grid[row][col].rgt = grid[row][col].top = int.MinValue;
+            IGridElt elt = grid[row][col].FirstElt;
             if (elt != null)
             {
-                cell.lft = (int)elt.Xf;
-                cell.btm = (int)elt.Yf;
-                cell.rgt = cell.lft + elt.Width;
-                cell.top = cell.btm + elt.Height;
+                grid[row][col].lft = (int)elt.LeftX;
+                grid[row][col].btm = (int)elt.BottomY;
+                grid[row][col].rgt = grid[row][col].lft + elt.Width;
+                grid[row][col].top = grid[row][col].btm + elt.Height;
 
                 elt = elt.NextElt;
                 while (elt != null)
                 {
-                    int eLft = (int)elt.Xf;
-                    int eBtm = (int)elt.Yf;
+                    int eLft = (int)elt.LeftX;
+                    int eBtm = (int)elt.BottomY;
 
-                    cell.lft = Math.Min(cell.lft, eLft);
-                    cell.btm = Math.Min(cell.btm, eBtm);
-                    cell.rgt = Math.Max(cell.rgt, eLft + elt.Width);
-                    cell.top = Math.Max(cell.top, eBtm + elt.Height);
+                    grid[row][col].lft = Math.Min(grid[row][col].lft, eLft);
+                    grid[row][col].btm = Math.Min(grid[row][col].btm, eBtm);
+                    grid[row][col].rgt = Math.Max(grid[row][col].rgt, eLft + elt.Width);
+                    grid[row][col].top = Math.Max(grid[row][col].top, eBtm + elt.Height);
 
                     elt = elt.NextElt;
                 }
             }
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCoarseRow(float y)
         {
-            if (y <= 0) { return 0; }
-            return Math.Min((int)(y * _invCoarseHeight), _coarseRows - 1);
+            if (y <= 0)
+            { return 0; }
+            return Math.Min((int)( y * _invCoarseHeight ), _coarseRows - 1);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCoarseCol(float x)
         {
-            if (x <= 0) { return 0; }
-            return Math.Min((int)(x * _invCoarseWidth), _coarseCols - 1);
+            if (x <= 0)
+            { return 0; }
+            return Math.Min((int)( x * _invCoarseWidth ), _coarseCols - 1);
         }
 
         // Returns the grid cell Y index for the specified position.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCellRow(float y)
         {
-            if (y <= 0) { return 0; }
-            return Math.Min((int)(y * _invCellHeight), _numRows - 1);
+            if (y <= 0)
+            { return 0; }
+            return Math.Min((int)( y * _invCellHeight ), _numRows - 1);
         }
 
         // Returns the grid cell X index for the specified position.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCellCol(float x)
         {
-            if (x <= 0) { return 0; }
-            return Math.Min((int)(x * _invCellWidth), _numCols - 1);
+            if (x <= 0)
+            { return 0; }
+            return Math.Min((int)( x * _invCellWidth ), _numCols - 1);
         }
 
         //TODO: move somewhere more useful
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(in AABB a, in IGridElt b)
         {
-            int bLft = (int)b.Xf;
-            int bBtm = (int)b.Yf;
-            return RectOverlap(a.lft, a.top, a.rgt, a.btm, 
+            int bLft = (int)b.LeftX;
+            int bBtm = (int)b.BottomY;
+            return RectOverlap(a.lft, a.top, a.rgt, a.btm,
                 bLft, bBtm + b.Height, bLft + b.Width, bBtm);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(in AABB a, in LooseCell b)
         {
-            return RectOverlap(a.lft, a.top, a.rgt, a.btm, b.lft, b.top, b.rgt, b.btm);
+            return RectOverlap(a.lft, a.top, a.rgt, a.btm,
+                b.lft, b.top, b.rgt, b.btm);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(int l1, int t1, int r1, int b1,
-                                         int l2, int t2, int r2, int b2)
+                                      int l2, int t2, int r2, int b2)
         {
             return l2 <= r1 && r2 >= l1 && t2 >= b1 && b2 <= t1;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(float l1, float t1, float r1, float b1,
-                                         float l2, float t2, float r2, float b2)
+                                      float l2, float t2, float r2, float b2)
         {
             return l2 <= r1 && r2 >= l1 && t2 >= b1 && b2 <= t1;
         }
@@ -415,44 +422,40 @@
         //=============================================
         #region child classes
 
-        private class CoarseGrid
-        {
-            public readonly CoarseCell[][] cells;
+        //private class CoarseGrid
+        //{
+        //    public readonly CoarseCell[][] coarseCellArr;
 
-            public CoarseGrid(int cellsWide, int cellsHigh)
-            {
-                int cellsPerCell = cellsWide * cellsHigh;
-                cells = new CoarseCell[cellsHigh][];
-                for (int y = cellsHigh - 1; y >= 0; --y)
-                {
-                    cells[y] = new CoarseCell[cellsWide];
-                    for (int x = cellsWide - 1; x >= 0; --x)
-                    {
-                        cells[y][x] = new CoarseCell(cellsPerCell);
-                    }
-                }
-            }
-        }
+        //    public CoarseGrid(int cellsWide, int cellsHigh)
+        //    {
+        //        int cellsPerCell = cellsWide * cellsHigh;
+        //        cellsPerCell = 4;
+        //        coarseCellArr = new CoarseCell[cellsHigh][];
+        //        for (int y = cellsHigh - 1; y >= 0; --y)
+        //        {
+        //            coarseCellArr[y] = new CoarseCell[cellsWide];
+        //            for (int x = cellsWide - 1; x >= 0; --x)
+        //            {
+        //                coarseCellArr[y][x] = new CoarseCell(cellsPerCell);
+        //            }
+        //        }
+        //    }
+        //}
 
-        private class CoarseCell
-        {
-            /// <summary>
-            /// A singly linked list of all the loose cells in this tight cell
-            /// </summary>
-            public readonly FreeLinkedList<LooseCell> looseCells;
+        //private class CoarseCell
+        //{
+        //    /// <summary>
+        //    /// A singly linked list of all the loose cells in this tight cell
+        //    /// </summary>
+        //    public readonly FreeLinkedList<LooseCell> looseCells;
 
-            public CoarseCell()
-            {
-                looseCells = new FreeLinkedList<LooseCell>();
-            }
-
-            /// <param name="cap">How much space to allocate. Should be the number of loose cells that the 
-            /// coarse cell spans, or slightly more.</param>
-            public CoarseCell(int cap)
-            {
-                looseCells = new FreeLinkedList<LooseCell>(cap);
-            }
-        }
+        //    /// <param name="cap">How much space to allocate. Should be the number of loose cells that the 
+        //    /// coarse cell spans, or slightly more.</param>
+        //    public CoarseCell(int cap = 4)
+        //    {
+        //        looseCells = new FreeLinkedList<LooseCell>(cap);
+        //    }
+        //}
 
         //TODO: This would be faster as a struct b/c data locality
         //      but doesn't work with the way I'm inserting them into coarse cells
@@ -460,13 +463,13 @@
         //      maybe try out the one big list method since that would reduce copies?
         //      then query overlapping cells and put them in a stack 
         //      before checking for overlapping elements
-        private class LooseCell
+        private struct LooseCell
         {
             /// <summary>
             /// The first element in the linked list for this cell, 
             /// the rest are accessed by <see cref="IGridElt.NextElt"/>
             /// </summary>
-            public IGridElt FirstElt { get; set; }
+            public IGridElt FirstElt;
 
             /// <summary>X coordinate of the cell's bottom-left corner</summary>
             public int lft;
@@ -476,37 +479,31 @@
             public int rgt;
             /// <summary>Height of the cell's bounding box</summary>
             public int top;
-
-            public bool NoSize
-            {
-                get => lft == int.MaxValue && btm == int.MaxValue &&
-                    rgt == int.MinValue && top == int.MinValue;
-            }
-
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Push(IGridElt elt)
             {
                 elt.NextElt = FirstElt;
                 FirstElt = elt;
             }
-
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Pop()
             {
                 FirstElt = FirstElt.NextElt;
             }
         }
 
-        private struct LooseGridRow
-        {
-            // Stores all the loose cells in the row. 
-            // Each cell stores the first element in that cell, 
-            // which points to the next in the elts list.
-            public LooseCell[] cells;
+        //private struct LooseGridRow
+        //{
+        //    // Stores all the loose cells in the row. 
+        //    // Each cell stores the first element in that cell, 
+        //    // which points to the next in the elts list.
+        //    public LooseCell[] looseCellArr;
 
-            public LooseGridRow(int cellsWide)
-            {
-                cells = new LooseCell[cellsWide];
-            }
-        }
+        //    public LooseGridRow(int cellsWide)
+        //    {
+        //        looseCellArr = new LooseCell[cellsWide];
+        //    }
+        //}
     }
     #endregion
 }

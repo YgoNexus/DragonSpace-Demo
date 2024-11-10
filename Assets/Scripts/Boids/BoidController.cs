@@ -41,7 +41,8 @@ public class BoidController : MonoBehaviour
     {
         startFrame = Time.frameCount;
         startTime = Time.time;
-        if (useMenuSettings) { sets = menuSettings; }
+        if (useMenuSettings)
+        { sets = menuSettings; }
         BoidBase.bounds = sets.bounds;
         BoidBase.sets = sets;
         type = sets.type;
@@ -55,7 +56,6 @@ public class BoidController : MonoBehaviour
             Camera.main.transform.position = new Vector3(sets.bounds.width / 2, 50, sets.bounds.height / 2);
 
         Camera.main.orthographicSize = sets.bounds.height / 1.6f;
-        
 
         r = new System.Random(12345);
         //insert boids
@@ -170,7 +170,7 @@ public class BoidController : MonoBehaviour
             go.TryGetComponent(out Boid b);
             b.Init();
             UnityEngine.Profiling.Profiler.BeginSample("Insert boids");
-            b.index_TEMP = ((LooseQuadTree<BoidBase>)qt).BulkInsertPoint(b, b.X, b.Y, b.Width, b.Height);
+            b.index_TEMP = ( (LooseQuadTree<BoidBase>)qt ).BulkInsertPoint(b, b.X, b.Y, b.Width, b.Height);
             UnityEngine.Profiling.Profiler.EndSample();
             ++entityCount;
         }
@@ -187,6 +187,7 @@ public class BoidController : MonoBehaviour
         for (int i = 0; i < sets.testElements; ++i)
         {
             Vector3Int pos = new Vector3Int(r.Next(sets.bounds.width), 0, r.Next(sets.bounds.height));
+            pos = new Vector3Int(5, 0, 5);
             GameObject go = Instantiate(uGridBoidPrefab, pos, Quaternion.identity);
             go.TryGetComponent(out UGridBoid b);
             b.ID = entityCount;
@@ -206,6 +207,7 @@ public class BoidController : MonoBehaviour
         for (int i = 0; i < sets.testElements; ++i)
         {
             Vector3Int pos = new Vector3Int(r.Next(sets.bounds.width), 0, r.Next(sets.bounds.height));
+            //pos = new Vector3Int(5, 0, 5);
             GameObject go = Instantiate(ldGridBoidPrefab, pos, Quaternion.identity);
             go.TryGetComponent(out GridBoid b);
             b.ID = entityCount;
@@ -237,9 +239,9 @@ public class BoidController : MonoBehaviour
         framesPassed = Time.frameCount - startFrame;
         if (framesPassed == frames)
         {
-            framerate.text = (framesPassed / Time.timeSinceLevelLoad).ToString();
+            framerate.text = ( framesPassed / Time.timeSinceLevelLoad ).ToString();
 
-            Debug.Log("Rough framerate: " + (framesPassed / Time.timeSinceLevelLoad).ToString());
+            Debug.Log($"{type.ToString()} Mode -> Rough framerate: " + ( framesPassed / Time.timeSinceLevelLoad ).ToString());
             Debug.Break();
         }
     }
@@ -248,7 +250,7 @@ public class BoidController : MonoBehaviour
     public bool drawTree;
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
+        Gizmos.color = Color.clear;
         Gizmos.DrawWireCube(
             sets.bounds.center.ToV3(),
             new Vector3(sets.bounds.width, 0, sets.bounds.height));
@@ -263,7 +265,6 @@ public class BoidController : MonoBehaviour
         Gizmos.DrawWireCube(
             queryTest.center.ToV3(),
             queryTest.size.ToV3());
-
         //TODO: this is stupid
         if (Application.isPlaying)
         {
@@ -317,7 +318,7 @@ public class BoidController : MonoBehaviour
             else if (type == QtTestType.UGrid)
                 uGrid.Traverse(UGridGizmo.Draw);
             else if (type == QtTestType.LooseDGrid)
-                ldGrid.Traverse(LooseGridGizmo.Draw);
+                ldGrid.Traverse(LooseGridGizmo.Instance);
         }
     }
 #endif

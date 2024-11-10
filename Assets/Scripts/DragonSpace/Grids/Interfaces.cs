@@ -9,11 +9,11 @@ namespace DragonSpace.Grids
         /// <summary>
         /// The bottom-left position of the uniformly-sized element
         /// </summary>
-        float Xf { get; }
+        float LeftX { get; }
         /// <summary>
         /// The bottom-left position of the uniformly-sized element
         /// </summary>
-        float Yf { get; }
+        float BottomY { get; }
         int Width { get; }
         int Height { get; }
 

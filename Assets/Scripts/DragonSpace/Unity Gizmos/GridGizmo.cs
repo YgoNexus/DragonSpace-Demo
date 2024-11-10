@@ -5,19 +5,28 @@ namespace DragonSpace.Grids
 {
     class LooseGridGizmo : ILooseGridVisitor
     {
-        public static LooseGridGizmo Draw { get { return new LooseGridGizmo(); } }
+        private static LooseGridGizmo _instance;
+        public static LooseGridGizmo Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = new LooseGridGizmo();
+                return _instance;
+            }
+        }
 
         public void CoarseGrid(float width, float height, float cellWidth, float cellHeight)
         {
             //recalculating stuff just to have fewer parameters
             //There's probably a better way to handle this
-            int numRows = (int)(height / cellHeight) + 1;
-            int numCols = (int)(width / cellWidth) + 1;
+            int numRows = (int)( height / cellHeight ) + 1;
+            int numCols = (int)( width / cellWidth ) + 1;
             width = cellWidth * numCols;
             height = cellHeight * numRows;
 
             //draw grid outline
-            Gizmos.color = Color.blue;
+            Gizmos.color = Color.cyan;
             Gizmos.DrawWireCube(
                 new Vector3(width / 2, -1, height / 2),
                 new Vector3(width, 1, height));
@@ -42,9 +51,9 @@ namespace DragonSpace.Grids
             if (count < 1)
                 return;
 
-            Gizmos.color = Color.blue;
+            Gizmos.color = Color.red;
             Gizmos.DrawWireCube(
-                    new Vector3((x * cWidth) + (cWidth / 2), 0, (y * cHeight) + (cHeight / 2)),
+                    new Vector3(( x * cWidth ) + ( cWidth / 2 ), 0, ( y * cHeight ) + ( cHeight / 2 )),
                     new Vector3(cWidth, 1, cHeight));
         }
 
@@ -52,16 +61,14 @@ namespace DragonSpace.Grids
         {
             //recalculating stuff just to have fewer parameters
             //There's probably a better way to handle this
-            int numRows = (int)(height / cellHeight) + 1;
-            int numCols = (int)(width / cellWidth) + 1;
+            int numRows = (int)( height / cellHeight ) + 1;
+            int numCols = (int)( width / cellWidth ) + 1;
             width = cellWidth * numCols;
             height = cellHeight * numRows;
 
             //draw grid outline
-            Gizmos.color = new Color(0.7f, 0.7f, 0.7f, 0.5f);
-            Gizmos.DrawWireCube(
-                new Vector3(width / 2, -2, height / 2),
-                new Vector3(width, 1, height));
+            Gizmos.color = Color.grey; // grey
+            Gizmos.DrawWireCube(new Vector3(width / 2, -2, height / 2), new Vector3(width, 1, height));
 
             //draw grid lines
             for (int i = 1; i < numRows; i++)
@@ -93,8 +100,8 @@ namespace DragonSpace.Grids
         {
             //recalculating stuff just to have fewer parameters
             //There's probably a better way to handle this
-            int numRows = (int)(height / cellHeight) + 1;
-            int numCols = (int)(width / cellWidth) + 1;
+            int numRows = (int)( height / cellHeight ) + 1;
+            int numCols = (int)( width / cellWidth ) + 1;
             width = cellWidth * numCols;
             height = cellHeight * numRows;
 
@@ -125,7 +132,7 @@ namespace DragonSpace.Grids
             float halfHeight = cellHeight / 2;
             Gizmos.color = new Color(0, 0, 1, 0.5f);
             Gizmos.DrawCube(
-                new Vector3((x * cellWidth) + halfWidth, 0, (y * cellHeight) + halfHeight),
+                new Vector3(( x * cellWidth ) + halfWidth, 0, ( y * cellHeight ) + halfHeight),
                 new Vector3(cellWidth, 1, cellHeight));
         }
     }

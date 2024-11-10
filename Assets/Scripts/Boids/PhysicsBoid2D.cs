@@ -56,7 +56,7 @@ public class PhysicsBoid2D : MonoBehaviour
 
     void Move()
     {
-        pos += facing * (sets.speed * Time.deltaTime);
+        pos += facing * ( sets.speed * Time.deltaTime );
         rb.position = pos;
     }
 
@@ -68,12 +68,12 @@ public class PhysicsBoid2D : MonoBehaviour
     protected void FindFlockmates()
     {
         UnityEngine.Profiling.Profiler.BeginSample("Find Flockmates");
-        int h = Physics2D.OverlapCircleNonAlloc(
-            pos + facing * 8, sets.radius, hits);
+        int h = Physics2D.OverlapCircleNonAlloc(pos + facing * 8, sets.radius, hits);
         flock.Clear();
         for (int i = 0; i < h; i++)
         {
-            if(hits[i].transform == transform) { continue; }
+            if (hits[i].transform == transform)
+            { continue; }
             flock.Add(hits[i].GetComponent<PhysicsBoid2D>());
         }
         UnityEngine.Profiling.Profiler.EndSample();
@@ -111,7 +111,7 @@ public class PhysicsBoid2D : MonoBehaviour
             adjoin -= pos;
         }
     }
-    
+
     bool AvoidBounds()
     {
         if (pos.x < 0 || pos.x > bounds.width || pos.y < 0 || pos.y > bounds.height)

@@ -12,7 +12,8 @@ namespace DragonSpace.Grids
         readonly int _width, _height;
 
         /// <summary>Stores all the rows in the grid</summary>
-        private UGridRow[] rows;
+        private T[][] rows;
+        private int[] rowCounts;
 
         // Stores the number of columns and rows in the grid.
         readonly int _numRows, _numCols;
@@ -26,29 +27,31 @@ namespace DragonSpace.Grids
         /// The size of all elements stored in the grid.
         /// </summary>
         readonly int _eltWidth, _eltHeight;
-        
+
         // Returns a new grid storing elements that have a uniform upper-bound size. Because 
         // all elements are treated uniformly-sized for the sake of search queries, each one 
         // can be stored as a single point in the grid.
         public UGrid(int eWidth, int eHeight, float cWidth, float cHeight,
             int gridWidth, int gridHeight)
         {
-            _numRows = (int)(gridHeight / cHeight) + 1;
-            _numCols = (int)(gridWidth / cWidth) + 1;
             _eltWidth = eWidth;
             _eltHeight = eHeight;
+            _numRows = (int)( gridHeight / cHeight ) + 1;
+            _numCols = (int)( gridWidth / cWidth ) + 1;
             _invCellWidth = 1 / cWidth;
             _invCellHeight = 1 / cHeight;
             _width = gridWidth;
             _height = gridHeight;
 
-            
-
-            rows = new UGridRow[_numRows];
+            rows = new T[_numRows][];
+            rowCounts = new int[_numRows];
             for (int i = 0; i < _numRows; i++)
             {
-                rows[i] = new UGridRow();
-                rows[i].cells = new T[_numCols];
+                rows[i] = new T[_numCols];
+                for (int j = 0; j < _numCols; j++)
+                {
+                    rows[i][j] = default(T);
+                }
             }
         }
 
@@ -68,10 +71,10 @@ namespace DragonSpace.Grids
 
         private void InsertToCell(T obj, int xIdx, int yIdx)
         {
-            UGridRow row = rows[yIdx];
-            obj.NextElt = row.cells[xIdx];
-            row.cells[xIdx] = obj;
-            ++row.eltCount;
+            //UGridRow row = rows[yIdx];
+            obj.NextElt = rows[yIdx][xIdx];
+            rows[yIdx][xIdx] = obj;
+            rowCounts[yIdx]++;
         }
 
         /// <summary>
@@ -88,9 +91,9 @@ namespace DragonSpace.Grids
 
         private void RemoveFromCell(T obj, int xIdx, int yIdx)
         {
-            UGridRow row = rows[yIdx];
+            var row = rows[yIdx];
 
-            T elt = row.cells[xIdx];
+            T elt = row[xIdx];
             T prevElt = null;
             while (elt.ID != obj.ID)
             {
@@ -104,11 +107,11 @@ namespace DragonSpace.Grids
             }
 
             if (prevElt == null)
-                row.cells[xIdx] = (T)elt.NextElt;
+                row[xIdx] = (T)elt.NextElt;
             else
                 prevElt.NextElt = elt.NextElt;
 
-            --row.eltCount;
+            rowCounts[yIdx]--;
         }
 
         /// <summary>
@@ -125,8 +128,6 @@ namespace DragonSpace.Grids
             int oldRow = GridLocalToCellRow(fromY);
             int newCol = GridLocalToCellCol(toX);
             int newRow = GridLocalToCellRow(toY);
-
-            UGridRow row = rows[oldRow];
 
             if (oldCol != newCol || oldRow != newRow)
             {
@@ -158,13 +159,13 @@ namespace DragonSpace.Grids
             _queryResults.Clear();
             for (int y = minY; y <= maxY; ++y)
             {
-                UGridRow row = rows[y];
-                if (row.eltCount == 0)
+                var row = rows[y];
+                if (rowCounts[y] == 0)
                     continue;
 
                 for (int x = minX; x <= maxX; ++x)
                 {
-                    T elt = row.cells[x];
+                    T elt = row[x];
                     while (elt != null)
                     {
                         if (PointInRect(elt, in query) && elt.ID != omitEltID)
@@ -187,15 +188,15 @@ namespace DragonSpace.Grids
 
             for (int y = 0; y < _numRows; ++y)
             {
-                UGridRow row = rows[y];
-                if (row.eltCount == 0)
+                var row = rows[y];
+                if (rowCounts[y] == 0)
                     continue;
 
                 for (int x = 0; x < _numCols; ++x)
                 {
-                    if (row.cells[x] != null)
+                    if (row[x] != null)
                     {
-                        visitor.Cell(row.cells[x], x, y, 1f / _invCellWidth, 1f / _invCellHeight);
+                        visitor.Cell(row[x], x, y, 1f / _invCellWidth, 1f / _invCellHeight);
                     }
                 }
             }
@@ -207,8 +208,9 @@ namespace DragonSpace.Grids
         /// </summary>
         private int GridLocalToCellRow(float y)
         {
-            if (y <= 0) { return 0; }
-            return Math.Min((int)(y * _invCellHeight), _numRows - 1);
+            if (y <= 0)
+            { return 0; }
+            return Math.Min((int)( y * _invCellHeight ), _numRows - 1);
         }
 
         /// <summary>
@@ -216,8 +218,9 @@ namespace DragonSpace.Grids
         /// </summary>
         private int GridLocalToCellCol(float x)
         {
-            if (x <= 0) { return 0; }
-            return Math.Min((int)(x * _invCellWidth), _numCols - 1);
+            if (x <= 0)
+            { return 0; }
+            return Math.Min((int)( x * _invCellWidth ), _numCols - 1);
         }
 
         private static bool PointInRect(in IUGridElt elt, in AABB rect)
@@ -229,15 +232,15 @@ namespace DragonSpace.Grids
         /// <summary>
         /// Just an array of type T and a cached count of the elements in the row
         /// </summary>
-        class UGridRow
-        {
-            // Stores all the cells in the row. 
-            // Each cell stores the first element in that cell, 
-            // which points to the next in the elts list.
-            public T[] cells;
+        //class UGridRow
+        //{
+        //    // Stores all the cells in the row. 
+        //    // Each cell stores the first element in that cell, 
+        //    // which points to the next in the elts list.
+        //    public T[] cells;
 
-            // Stores the number of elements in the row.
-            public int eltCount;
-        }
+        //    // Stores the number of elements in the row.
+        //    public int eltCount;
+        //}
     }
 }
