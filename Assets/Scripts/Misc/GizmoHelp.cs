@@ -5,7 +5,7 @@ public static class GizmoHelp
 {
     public static void DrawAABB(Color c, AABB box)
     {
-        DrawAABB(c, box.lft, box.btm, box.rgt, box.top);
+        DrawAABB(c, box.left, box.bottom, box.right, box.top);
     }
 
     public static void DrawAABB(Color c, float lft, float btm, float rgt, float top)

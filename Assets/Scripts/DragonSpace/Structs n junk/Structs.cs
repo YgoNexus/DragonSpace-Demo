@@ -9,25 +9,25 @@ namespace DragonSpace.Structs
     /// </summary>
     public struct AABB
     {
-        public int lft;
+        public int left;
         public int top;
-        public int rgt;
-        public int btm;
+        public int right;
+        public int bottom;
 
         public AABB(int l, int t, int r, int b)
         {
-            lft = l;
+            left = l;
             top = t;
-            rgt = r;
-            btm = b;
+            right = r;
+            bottom = b;
         }
 
         public AABB(float l, float t, float r, float b)
         {
-            lft = (int)l;
+            left = (int)l;
             top = (int)Math.Ceiling(t);
-            rgt = (int)Math.Ceiling(r);
-            btm = (int)b;
+            right = (int)Math.Ceiling(r);
+            bottom = (int)b;
         }
     }
 }

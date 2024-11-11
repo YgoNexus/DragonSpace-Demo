@@ -225,7 +225,7 @@ namespace DragonSpace.Grids
 
         private static bool PointInRect(in IUGridElt elt, in AABB rect)
         {
-            return elt.Xf <= rect.rgt && elt.Xf >= rect.lft && elt.Yf <= rect.top && elt.Yf >= rect.btm;
+            return elt.Xf <= rect.right && elt.Xf >= rect.left && elt.Yf <= rect.top && elt.Yf >= rect.bottom;
         }
         #endregion
 

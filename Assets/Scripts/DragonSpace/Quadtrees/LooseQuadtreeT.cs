@@ -437,19 +437,19 @@
         protected static bool RectOverlap(in QtLooseNode a, in AABB b)
         {
             return RectOverlap(a.lft, a.top, a.rgt, a.btm,
-                b.lft, b.top, b.rgt, b.btm);
+                b.left, b.top, b.right, b.bottom);
         }
 
         protected static bool RectOverlap(in LQtElement<T> a, in AABB b)
         {
             return RectOverlap(a.Lft, a.Top, a.Rgt, a.Btm,
-                b.lft, b.top, b.rgt, b.btm);
+                b.left, b.top, b.right, b.bottom);
         }
 
         protected static bool RectOverlap(in AABB a, in AABB b)
         {
-            return RectOverlap(a.lft, a.top, a.rgt, a.btm,
-                b.lft, b.top, b.rgt, b.btm);
+            return RectOverlap(a.left, a.top, a.right, a.bottom,
+                b.left, b.top, b.right, b.bottom);
         }
 
         /// <summary>
@@ -717,10 +717,10 @@
                 {
                     ref LQtElement<T> e = ref _elements[fc];
 
-                    maxBounds.lft = Math.Min(maxBounds.lft, e.Lft);
+                    maxBounds.left = Math.Min(maxBounds.left, e.Lft);
                     maxBounds.top = Math.Max(maxBounds.top, e.Top);
-                    maxBounds.rgt = Math.Max(maxBounds.rgt, e.Rgt);
-                    maxBounds.btm = Math.Min(maxBounds.btm, e.Btm);
+                    maxBounds.right = Math.Max(maxBounds.right, e.Rgt);
+                    maxBounds.bottom = Math.Min(maxBounds.bottom, e.Btm);
                     fc = e.next;
                 }
             }
@@ -731,17 +731,17 @@
                 {
                     ref QtLooseNode l = ref _nodes[-fc + i];
 
-                    maxBounds.lft = Math.Min(maxBounds.lft, l.lft);
+                    maxBounds.left = Math.Min(maxBounds.left, l.lft);
                     maxBounds.top = Math.Max(maxBounds.top, l.top);
-                    maxBounds.rgt = Math.Max(maxBounds.rgt, l.rgt);
-                    maxBounds.btm = Math.Min(maxBounds.btm, l.btm);
+                    maxBounds.right = Math.Max(maxBounds.right, l.rgt);
+                    maxBounds.bottom = Math.Min(maxBounds.bottom, l.btm);
                 }
             }
             //then, set the node to whatever the max bounds were
-            node.lft = maxBounds.lft;
+            node.lft = maxBounds.left;
             node.top = maxBounds.top;
-            node.rgt = maxBounds.rgt;
-            node.btm = maxBounds.btm;
+            node.rgt = maxBounds.right;
+            node.btm = maxBounds.bottom;
         }
 
         /// <summary>

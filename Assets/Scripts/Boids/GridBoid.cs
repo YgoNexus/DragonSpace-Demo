@@ -14,14 +14,14 @@ public class GridBoid : MonoBehaviour, IGridElt
 
     Transform tf;
     public int ID { get; set; }
-    public float halfWidth;   
+    public float halfWidth;
     public float halfHeight;  //TODO: storing this here kinda defeats the point of not storing it in the grid
     #endregion
 
     public static LooseDoubleGrid grid;
     public static RectInt bounds;
     public static BoidSettingsTemp sets;
-    
+
     public Vector2 pos;
     public Vector2 facing;
     public Vector2 dir;
@@ -80,7 +80,7 @@ public class GridBoid : MonoBehaviour, IGridElt
         UnityEngine.Profiling.Profiler.BeginSample("Move");
         float oldX = LeftX;
         float oldY = BottomY;
-        pos += facing * (sets.speed * Time.deltaTime);
+        pos += facing * ( sets.speed * Time.deltaTime );
         tf.position = pos.ToV3();
         grid.Move(this, oldX, oldY, LeftX, BottomY);
         UnityEngine.Profiling.Profiler.EndSample();
@@ -135,11 +135,11 @@ public class GridBoid : MonoBehaviour, IGridElt
     {
         Vector3 pos3 = pos.ToV3();
         Gizmos.color = Color.red;
-        Gizmos.DrawLine(pos3, pos3 + (avoid * 8).ToV3());
+        Gizmos.DrawLine(pos3, pos3 + ( avoid * 8 ).ToV3());
         Gizmos.color = Color.magenta;
-        Gizmos.DrawLine(pos3, pos3 + (adjoin.normalized * 8).ToV3());
+        Gizmos.DrawLine(pos3, pos3 + ( adjoin.normalized * 8 ).ToV3());
         Gizmos.color = Color.blue;
-        Gizmos.DrawLine(pos3, pos3 + (align.normalized * 8).ToV3());
+        Gizmos.DrawLine(pos3, pos3 + ( align.normalized * 8 ).ToV3());
 
         //show flockmates
         Gizmos.color = Color.yellow;
@@ -149,7 +149,7 @@ public class GridBoid : MonoBehaviour, IGridElt
         flock = grid.Query(x - r, y - r, x + 2 + r, y + 2 + r, ID); //TODO: variable sizes (not 2)
         for (int i = 0; i < flock.Count; ++i)
         {
-            Gizmos.DrawLine(pos3, ((GridBoid)flock[i]).pos.ToV3());
+            Gizmos.DrawLine(pos3, ( (GridBoid)flock[i] ).pos.ToV3());
         }
 
         //draw detection "radius"
@@ -165,8 +165,8 @@ public class GridBoid : MonoBehaviour, IGridElt
     {
         Vector3 pos3 = pos.ToV3();
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(pos3, pos3 + (dir.ToV3() * 4));
+        Gizmos.DrawLine(pos3, pos3 + ( dir.ToV3() * 4 ));
         Gizmos.color = Color.white;
-        Gizmos.DrawLine(pos3, pos3 + (facing * 4).ToV3());
+        Gizmos.DrawLine(pos3, pos3 + ( facing * 4 ).ToV3());
     }
 }

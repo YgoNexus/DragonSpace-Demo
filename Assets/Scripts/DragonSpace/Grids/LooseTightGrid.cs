@@ -52,32 +52,32 @@ namespace DragonSpace.Grids
         /// <param name="obj">The object to insert</param>
         public void Insert(IGridElt obj)
         {
-            int xIdx = GridLocalToCellCol(obj.LeftX);
-            int yIdx = GridLocalToCellRow(obj.BottomY);
-            InsertToCell(obj, xIdx, yIdx);
+            int col = GridLocalToCellCol(obj.LeftX);
+            int row = GridLocalToCellRow(obj.BottomY);
+            InsertToCell(obj, col, row);
         }
 
         /// <summary>
         /// Inserts an object into a grid cell at the given index
         /// </summary>
         /// <param name="elt">The object to insert</param>
-        /// <param name="xIdx">The column index of the cell</param>
-        /// <param name="yIdx">The row index of the cell</param>
-        private void InsertToCell(IGridElt elt, int xIdx, int yIdx)
+        /// <param name="col">The column index of the cell</param>
+        /// <param name="row">The row index of the cell</param>
+        private void InsertToCell(IGridElt elt, int col, int row)
         {
             //if the cell is empty, initialize the bounds to match the element
-            if (grid[yIdx * _numCols + xIdx].FirstElt == null)
+            if (grid[row * _numCols + col].FirstElt == null)
             {
-                grid[yIdx * _numCols + xIdx].Push(elt);
-                grid[yIdx * _numCols + xIdx].lft = (int)elt.LeftX;
-                grid[yIdx * _numCols + xIdx].btm = (int)elt.BottomY;
-                grid[yIdx * _numCols + xIdx].rgt = (int)elt.LeftX + elt.Width;
-                grid[yIdx * _numCols + xIdx].top = (int)elt.BottomY + elt.Height;
+                grid[row * _numCols + col].Push(elt);
+                grid[row * _numCols + col].lft = (int)elt.LeftX;
+                grid[row * _numCols + col].btm = (int)elt.BottomY;
+                grid[row * _numCols + col].rgt = (int)elt.LeftX + elt.Width;
+                grid[row * _numCols + col].top = (int)elt.BottomY + elt.Height;
             }
             else    //otherwise, see if the bounds need to change to fit the element
             {
-                grid[yIdx * _numCols + xIdx].Push(elt);
-                ExpandCell(yIdx, xIdx, elt);
+                grid[row * _numCols + col].Push(elt);
+                ExpandCell(row, col, elt);
             }
         }
         /// <summary>
@@ -87,13 +87,13 @@ namespace DragonSpace.Grids
         /// <param name="obj">The object to remove</param>
         public void Remove(IGridElt obj)
         {
-            int xIdx = GridLocalToCellCol(obj.LeftX);
-            int yIdx = GridLocalToCellRow(obj.BottomY);
-            RemoveFromCell(obj, xIdx, yIdx);
+            int col = GridLocalToCellCol(obj.LeftX);
+            int row = GridLocalToCellRow(obj.BottomY);
+            RemoveFromCell(obj, col, row);
         }
-        private void RemoveFromCell(IGridElt obj, int xIdx, int yIdx)
+        private void RemoveFromCell(IGridElt obj, int col, int row)
         {
-            IGridElt elt = grid[yIdx * _numCols + xIdx].FirstElt;
+            IGridElt elt = grid[row * _numCols + col].FirstElt;
             IGridElt prevElt = null;
 
             while (elt != null && elt.ID != obj.ID)
@@ -103,7 +103,7 @@ namespace DragonSpace.Grids
             }
 
             if (prevElt == null)
-                grid[yIdx * _numCols + xIdx].Pop();
+                grid[row * _numCols + col].Pop();
             else
                 prevElt.NextElt = elt.NextElt;
         }
@@ -121,8 +121,6 @@ namespace DragonSpace.Grids
             int oldRow = GridLocalToCellRow(fromY);
             int newCol = GridLocalToCellCol(toX);
             int newRow = GridLocalToCellRow(toY);
-
-            //ref LooseGridRow row = ref looseGridRowArr[oldRow];
 
             if (oldCol != newCol || oldRow != newRow)
             {
@@ -144,16 +142,16 @@ namespace DragonSpace.Grids
         /// <param name="omitEltID">The ID of the element from the <see cref="IGridElt"/> interface to omit from results</param>
         /// <returns>A <see cref="List{T}"/> of <see cref="IGridElt"/>s</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public List<IGridElt> Query(float lft, float btm, float rgt, float top, int omitEltID = int.MinValue)
+        public List<IGridElt> Query(float left, float bottom, float right, float top, int omitEltID = int.MinValue)
         {
-            // Find the coarse cells that intersect the search query.
-            int minX = GridLocalToCellCol(lft);
-            int minY = GridLocalToCellRow(btm);
-            int maxX = GridLocalToCellCol(rgt);
+            // Find the cells that intersect the search query.
+            int minX = GridLocalToCellCol(left);
+            int minY = GridLocalToCellRow(bottom);
+            int maxX = GridLocalToCellCol(right);
             int maxY = GridLocalToCellRow(top);
 
-            AABB query = new AABB(lft, top, rgt, btm);
-
+            AABB query = new AABB(left, top, right, bottom);
+ 
             _queryResults.Clear();
 
             for (int y = minY; y <= maxY; ++y)
@@ -187,15 +185,14 @@ namespace DragonSpace.Grids
                 }
             }
         }
-
         /// <summary>
         /// Calls <see cref="ILooseGridVisitor.CoarseGrid(float, float, float, float)"/> with the grid data
         /// Then traverses the whole grid and calls <see cref="IUniformGridVisitor.Cell(int, int)"/>
         /// on any non-empty cells.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Traverse(ILooseTightGridVisitor visitor)
         {
+#if UNITY_EDITOR
             visitor.LooseGrid(boundWidth, boundHeight, 1f / _invCellWidth, 1f / _invCellHeight);
 
             for (int i = _numRows - 1; i >= 0; i--)
@@ -206,6 +203,7 @@ namespace DragonSpace.Grids
                     visitor.LooseCell(cell.FirstElt, new AABB(cell.lft, cell.top, cell.rgt, cell.btm));
                 }
             }
+#endif
         }
         #endregion
 
@@ -215,7 +213,6 @@ namespace DragonSpace.Grids
         {
             int eLft = (int)elt.LeftX;
             int eBtm = (int)elt.BottomY;
-
             grid[row * _numCols + col].lft = Math.Min(grid[row * _numCols + col].lft, eLft);
             grid[row * _numCols + col].btm = Math.Min(grid[row * _numCols + col].btm, eBtm);
             grid[row * _numCols + col].rgt = Math.Max(grid[row * _numCols + col].rgt, eLft + elt.Width);
@@ -227,12 +224,10 @@ namespace DragonSpace.Grids
             grid[row * _numCols + col].lft = grid[row * _numCols + col].btm = int.MaxValue;
             grid[row * _numCols + col].rgt = grid[row * _numCols + col].top = int.MinValue;
             IGridElt elt = grid[row * _numCols + col].FirstElt;
-
             while (elt != null)
             {
                 int eLft = (int)elt.LeftX;
                 int eBtm = (int)elt.BottomY;
-
                 grid[row * _numCols + col].lft = Math.Min(grid[row * _numCols + col].lft, eLft);
                 grid[row * _numCols + col].btm = Math.Min(grid[row * _numCols + col].btm, eBtm);
                 grid[row * _numCols + col].rgt = Math.Max(grid[row * _numCols + col].rgt, eLft + elt.Width);
@@ -261,12 +256,12 @@ namespace DragonSpace.Grids
         {
             int bLft = (int)b.LeftX;
             int bBtm = (int)b.BottomY;
-            return RectOverlap(a.lft, a.top, a.rgt, a.btm, bLft, bBtm + b.Height, bLft + b.Width, bBtm);
+            return RectOverlap(a.left, a.top, a.right, a.bottom, bLft, bBtm + b.Height, bLft + b.Width, bBtm);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(in AABB a, in LooseCell b)
         {
-            return RectOverlap(a.lft, a.top, a.rgt, a.btm, b.lft, b.top, b.rgt, b.btm);
+            return RectOverlap(a.left, a.top, a.right, a.bottom, b.lft, b.top, b.rgt, b.btm);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool RectOverlap(int l1, int t1, int r1, int b1, int l2, int t2, int r2, int b2)
@@ -279,9 +274,6 @@ namespace DragonSpace.Grids
             return l2 <= r1 && r2 >= l1 && t2 >= b1 && b2 <= t1;
         }
         #endregion
-
-        //=============================================
-        #region child classes
 
         private struct LooseCell
         {
@@ -312,5 +304,4 @@ namespace DragonSpace.Grids
             }
         }
     }
-    #endregion
 }
