@@ -5,6 +5,7 @@ namespace DragonSpace.Grids
     using System.Runtime.CompilerServices;
     using DragonSpace.Structs;
     using DragonSpace.Grids;
+
     //public class LooseDoubleGrid
     public class LooseTightGrid
     {
@@ -13,7 +14,7 @@ namespace DragonSpace.Grids
         /// <summary>
         /// the size of the grid
         /// </summary>
-        private readonly int boundWidth, boundHeight;
+        private readonly int boundWidth, boundHeight, offsetX, offsetY;
 
         // Stores the number of columns and rows in the grid.
         private readonly int _numRows, _numCols;
@@ -24,10 +25,12 @@ namespace DragonSpace.Grids
         private readonly float _invCellWidth, _invCellHeight;
 
         //public LooseDoubleGrid(float cellWidth, float cellHeight, float coarseWidth, float coarseHeight, int boundWidth, int boundHeight)
-        public LooseTightGrid(float cellWidth, float cellHeight, int boundWidth, int boundHeight)
+        public LooseTightGrid(float cellWidth, float cellHeight, int boundWidth, int boundHeight, int offsetX, int offsetY)
         {
             this.boundWidth = boundWidth;
             this.boundHeight = boundHeight;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
             _numRows = (int)( boundHeight / cellHeight ) + 1;
             _numCols = (int)( boundWidth / cellWidth ) + 1;
             _invCellWidth = 1 / cellWidth;
@@ -151,7 +154,7 @@ namespace DragonSpace.Grids
             int maxY = GridLocalToCellRow(top);
 
             AABB query = new AABB(left, top, right, bottom);
- 
+
             _queryResults.Clear();
 
             for (int y = minY; y <= maxY; ++y)
@@ -193,7 +196,7 @@ namespace DragonSpace.Grids
         public void Traverse(ILooseTightGridVisitor visitor)
         {
 #if UNITY_EDITOR
-            visitor.LooseGrid(boundWidth, boundHeight, 1f / _invCellWidth, 1f / _invCellHeight);
+            visitor.LooseGrid(boundWidth, boundHeight, 1f / _invCellWidth, 1f / _invCellHeight,offsetX, offsetY);
 
             for (int i = _numRows - 1; i >= 0; i--)
             {
@@ -240,14 +243,16 @@ namespace DragonSpace.Grids
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCellRow(float y)
         {
-            return y <= 0 ? 0 : Math.Min((int)( y * _invCellHeight ), _numRows - 1);
+            var realY = y - offsetY;
+            return realY <= 0 ? 0 : Math.Min((int)( realY * _invCellHeight ), _numRows - 1);
         }
 
         // Returns the grid cell X index for the specified position.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GridLocalToCellCol(float x)
         {
-            return x <= 0 ? 0 : Math.Min((int)( x * _invCellWidth ), _numCols - 1);
+            var realX = x - offsetX;
+            return realX <= 0 ? 0 : Math.Min((int)( realX * _invCellWidth ), _numCols - 1);
         }
 
         //TODO: move somewhere more useful

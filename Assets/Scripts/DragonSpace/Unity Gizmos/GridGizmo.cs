@@ -16,7 +16,7 @@ namespace DragonSpace.Grids
             }
         }
 
-        public void LooseGrid(float width, float height, float cellWidth, float cellHeight)
+        public void LooseGrid(float width, float height, float cellWidth, float cellHeight, float offsetX, float offsetY)
         {
             //recalculating stuff just to have fewer parameters
             //There's probably a better way to handle this
@@ -27,20 +27,35 @@ namespace DragonSpace.Grids
 
             //draw grid outline
             Gizmos.color = Color.gray; // grey
-            Gizmos.DrawWireCube(new Vector3(width / 2, -2, height / 2), new Vector3(width, 1, height));
+            Gizmos.DrawWireCube(new Vector3(
+                    width / 2 + offsetX,
+                    -2,
+                    height / 2 + offsetY),
+
+                new Vector3(width, 1, height));
 
             //draw grid lines
             for (int i = 1; i < numRows; i++)
             {
                 Gizmos.DrawLine(
-                    new Vector3(0, -2, i * cellHeight),
-                    new Vector3(width, -2, i * cellHeight));
+                    new Vector3(
+                        0 + offsetX,
+                        -2,
+                        i * cellHeight + offsetY),
+                    new Vector3(
+                        width + offsetX,
+                        -2,
+                        i * cellHeight + offsetY));
             }
             for (int i = 1; i < numCols; i++)
             {
                 Gizmos.DrawLine(
-                    new Vector3(i * cellWidth, -2, 0),
-                    new Vector3(i * cellWidth, -2, height));
+                    new Vector3(i * cellWidth + offsetX,
+                    -2,
+                    0 + offsetY),
+                    new Vector3(i * cellWidth + offsetX,
+                    -2,
+                    height + offsetY));
             }
         }
 

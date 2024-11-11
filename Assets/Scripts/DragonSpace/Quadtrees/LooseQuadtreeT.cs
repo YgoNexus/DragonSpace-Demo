@@ -50,8 +50,7 @@
             _centerY = _HalfHeight;
 
             //we don't use element 0, so we need a placeholder
-            _elements.Insert(new LQtElement<T>(
-                null, int.MinValue, int.MinValue, 0, 0));
+            _elements.Insert(new LQtElement<T>(null, int.MinValue, int.MinValue, 0, 0));
             // Insert the root node to the qt.
             _nodes.Insert(new QtLooseNode());
         }
@@ -367,7 +366,7 @@
             }
             return _queryResults;
         }
-
+       
         private Stack<QtLooseNode> _toTraverse = new Stack<QtLooseNode>();
         /// <summary>
         /// Traverses all the nodes in the tree, calling 'branch' for branch nodes and 'leaf' for leaf nodes.

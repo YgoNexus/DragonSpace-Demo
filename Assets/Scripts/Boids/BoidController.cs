@@ -202,7 +202,7 @@ public class BoidController : MonoBehaviour
     }
     void InitLooseTightGrid()
     {
-        looseTightGrid = new(cellSize, cellSize, sets.bounds.width, sets.bounds.height);
+        looseTightGrid = new(cellSize, cellSize, sets.bounds.width, sets.bounds.height,100,100);
 
         LooseTightGridBoid.bounds = sets.bounds;
         LooseTightGridBoid.grid = looseTightGrid;
@@ -211,6 +211,7 @@ public class BoidController : MonoBehaviour
         for (int i = 0; i < sets.testElements; ++i)
         {
             Vector3Int pos = new Vector3Int(r.Next(sets.bounds.width), 0, r.Next(sets.bounds.height));
+            pos += new Vector3Int(100, 0, 100);
             //pos = new Vector3Int(5, 0, 5);
             GameObject go = Instantiate(LooseTightGridBoidPrefab, pos, Quaternion.identity);
             go.TryGetComponent(out LooseTightGridBoid b);

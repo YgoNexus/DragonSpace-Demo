@@ -12,11 +12,12 @@ public class LooseTightGridBoid : MonoBehaviour, IGridElt
     public int Height { get; private set; }
     public IGridElt NextElt { get; set; } = null;
 
-    Transform tf;
     public int ID { get; set; }
+
     public float halfWidth;   
     public float halfHeight;  //TODO: storing this here kinda defeats the point of not storing it in the grid
     #endregion
+    Transform tf;
 
     public static LooseTightGrid grid;
     public static RectInt bounds;
@@ -39,8 +40,12 @@ public class LooseTightGridBoid : MonoBehaviour, IGridElt
 
         Width = (int)tf.localScale.x;
         Height = (int)tf.localScale.z;
-        halfWidth = tf.localScale.x / 2;
-        halfHeight = tf.localScale.z / 2;
+
+        Width *= 20;
+        Height *= 20;
+
+        halfWidth = Width / 2 ;
+        halfHeight = Height / 2;
     }
 
     void Update()
