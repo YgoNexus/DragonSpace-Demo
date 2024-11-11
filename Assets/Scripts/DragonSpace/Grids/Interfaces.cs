@@ -44,7 +44,11 @@ namespace DragonSpace.Grids
         /// </summary>
         int ID { get; set; }
     }
-
+    public interface ILooseTightGridVisitor
+    {
+        void LooseGrid(float width, float height, float cellWidth, float cellHeight);
+        void LooseCell(IGridElt firstElt, AABB bounds);
+    }
     public interface ILooseGridVisitor
     {
         void CoarseGrid(float width, float height, float cellWidth, float cellHeight);

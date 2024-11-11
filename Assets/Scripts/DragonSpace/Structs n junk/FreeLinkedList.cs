@@ -16,7 +16,7 @@ public struct FreeLinkedList<T>
     public int Count { get; private set; }
     public int Capacity
     {
-        get { return _data.Length; }
+        get => _data.Length;
         private set
         {
             if (value > _data.Length)
@@ -25,10 +25,7 @@ public struct FreeLinkedList<T>
             }
         }  //TODO: handle reducing capacity?
     }
-    public FreeElement FirstItem
-    {
-        get => this[_head];
-    }
+    public FreeElement FirstItem => this[_head];
 
 
     /// <summary>Creates a new list of elements</summary>
@@ -36,15 +33,17 @@ public struct FreeLinkedList<T>
     public FreeLinkedList(int capacity = 4)
     {
         _data = new FreeElement[capacity];
-        _data[0].next = -1;         //not sure if I need to do this but can't hurt
+        //Array.Fill(_data, new FreeElement { next = -1 }); 
+        _data[0].next = -1;  //not sure if I need to do this but can't hurt
         Count = 0;
-        _head = 0;
+        _head = -1;
         _freeSlot = -1;
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void ExpandCapacity(int cap)
     {
         FreeElement[] new_array = new FreeElement[cap];
+        //Array.Fill(new_array, new FreeElement { next = -1 });
         Array.Copy(_data, 0, new_array, 0, Capacity);
         _data = new_array;
     }
@@ -53,9 +52,7 @@ public struct FreeLinkedList<T>
 
     #region List Interface
     public ref FreeElement this[int index]   //use by ref at your own risk!!
-    {
-        get { return ref _data[index]; }
-    }
+    { get => ref _data[index]; }
 
     /// <summary>Clears the list</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -63,7 +60,7 @@ public struct FreeLinkedList<T>
     {
         //note that the data is still in the underlying array
         Count = 0;
-        _head = 0;
+        _head = -1;
         _freeSlot = -1;
     }
     #endregion
@@ -109,6 +106,7 @@ public struct FreeLinkedList<T>
             // Use double the size for the new capacity.
             ExpandCapacity(Count * 2);
         }
+
         _data[Count].element = elt;  //insert this to the back of the array
         return Count++;
     }

@@ -18,6 +18,7 @@ public class BoidController : MonoBehaviour
     public GameObject physicsXYBoidPrefab;
     public GameObject uGridBoidPrefab;
     public GameObject ldGridBoidPrefab;
+    public GameObject LooseTightGridBoidPrefab;
     public Text framerateResults;
     public Text framerate;
 
@@ -33,6 +34,7 @@ public class BoidController : MonoBehaviour
     QuadTreeBase<BoidBase> qt;
     UGrid<UGridBoid> uGrid;
     LooseDoubleGrid ldGrid;
+    LooseTightGrid looseTightGrid;
 
     public RectInt queryTest;
 
@@ -76,6 +78,10 @@ public class BoidController : MonoBehaviour
             case QtTestType.LooseDGrid:
                 InitLDGrid();
                 break;
+            case QtTestType.LooseTightGrid:
+                InitLooseTightGrid();
+                break;
+
             case QtTestType.Physics2D:
                 InitPhysics2D();
                 break;
@@ -187,7 +193,6 @@ public class BoidController : MonoBehaviour
         for (int i = 0; i < sets.testElements; ++i)
         {
             Vector3Int pos = new Vector3Int(r.Next(sets.bounds.width), 0, r.Next(sets.bounds.height));
-            pos = new Vector3Int(5, 0, 5);
             GameObject go = Instantiate(uGridBoidPrefab, pos, Quaternion.identity);
             go.TryGetComponent(out UGridBoid b);
             b.ID = entityCount;
@@ -195,7 +200,25 @@ public class BoidController : MonoBehaviour
             ++entityCount;
         }
     }
+    void InitLooseTightGrid()
+    {
+        looseTightGrid = new(cellSize, cellSize, sets.bounds.width, sets.bounds.height);
 
+        LooseTightGridBoid.bounds = sets.bounds;
+        LooseTightGridBoid.grid = looseTightGrid;
+        LooseTightGridBoid.sets = sets;
+
+        for (int i = 0; i < sets.testElements; ++i)
+        {
+            Vector3Int pos = new Vector3Int(r.Next(sets.bounds.width), 0, r.Next(sets.bounds.height));
+            //pos = new Vector3Int(5, 0, 5);
+            GameObject go = Instantiate(LooseTightGridBoidPrefab, pos, Quaternion.identity);
+            go.TryGetComponent(out LooseTightGridBoid b);
+            b.ID = entityCount;
+            looseTightGrid.Insert(b);
+            ++entityCount;
+        }
+    }
     private void InitLDGrid()
     {
         ldGrid = new LooseDoubleGrid(cellSize, cellSize, coarseCellSize, coarseCellSize, sets.bounds.width, sets.bounds.height);
@@ -233,6 +256,8 @@ public class BoidController : MonoBehaviour
             Physics.Simulate(Time.deltaTime);
         else if (type == QtTestType.Physics2D)
             Physics2D.Simulate(Time.deltaTime);
+        else if (type == QtTestType.LooseTightGrid)
+            looseTightGrid.TightenUp();
 
         //this framerate is wildly inaccurate in the editor, 
         //but it's useful for comparing optimization changes
@@ -287,6 +312,9 @@ public class BoidController : MonoBehaviour
                 case QtTestType.LooseDGrid:
                     results3 = ldGrid.Query(queryTest.xMin, queryTest.yMin, queryTest.xMax, queryTest.yMax);
                     break;
+                case QtTestType.LooseTightGrid:
+                    results3 = looseTightGrid.Query(queryTest.xMin, queryTest.yMin, queryTest.xMax, queryTest.yMax);
+                    break;
                 default:
                     break;
             }
@@ -306,9 +334,9 @@ public class BoidController : MonoBehaviour
             Gizmos.color = Color.green;
             for (int i = 0; i < ugh.Count; i++)
             {
-                Gizmos.DrawCube(ugh[i].transform.position, new Vector3(3, 3, 3));
+                Gizmos.DrawCube(ugh[i].transform.position, Vector3.one * 10);
             }
-
+            ContainsDuplicates(ugh);
         }
 
         if (Application.isPlaying && drawTree)
@@ -319,8 +347,25 @@ public class BoidController : MonoBehaviour
                 uGrid.Traverse(UGridGizmo.Draw);
             else if (type == QtTestType.LooseDGrid)
                 ldGrid.Traverse(LooseGridGizmo.Instance);
+            else if (type == QtTestType.LooseTightGrid)
+                looseTightGrid.Traverse(LooseTightGridGizmo.Instance);
         }
     }
+    public static bool ContainsDuplicates<T>(List<T> list) where T : Object
+    {
+        HashSet<T> seenElements = new HashSet<T>();
+
+        foreach (T item in list)
+        {
+            if (!seenElements.Add(item))
+            {
+                // 如果 Add 返回 false，说明该元素已存在，意味着有重复
+                Debug.Log($"duplicate {item.GetHashCode()}");
+            }
+        }
+        return false; // 没有重复元素
+    }
+
 #endif
 }
 
@@ -332,5 +377,6 @@ public enum QtTestType
     Quadtree,
     LooseQuadtree,
     UGrid,
-    LooseDGrid
+    LooseDGrid,
+    LooseTightGrid,
 }

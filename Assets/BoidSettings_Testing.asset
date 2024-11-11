@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: BoidSettings_Testing
   m_EditorClassIdentifier: 
   showFPS: 0
-  type: 4
+  type: 7
   bounds:
     x: 0
     y: 0
     width: 640
     height: 360
-  testElements: 800
+  testElements: 2200
   speed: 42
   radius: 9
   turnSpeed: 0.18
