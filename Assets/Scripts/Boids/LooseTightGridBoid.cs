@@ -41,8 +41,8 @@ public class LooseTightGridBoid : MonoBehaviour, IGridElt
         Width = (int)tf.localScale.x;
         Height = (int)tf.localScale.z;
 
-        Width *= 20;
-        Height *= 20;
+        Width *= 50;
+        Height *= 50;
 
         halfWidth = Width / 2 ;
         halfHeight = Height / 2;

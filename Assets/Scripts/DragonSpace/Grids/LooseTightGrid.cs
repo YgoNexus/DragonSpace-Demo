@@ -5,6 +5,7 @@ namespace DragonSpace.Grids
     using System.Runtime.CompilerServices;
     using DragonSpace.Structs;
     using DragonSpace.Grids;
+    using NPOI.SS.Formula.Functions;
 
     //public class LooseDoubleGrid
     public class LooseTightGrid
@@ -244,7 +245,7 @@ namespace DragonSpace.Grids
         private int GridLocalToCellRow(float y)
         {
             var realY = y - offsetY;
-            return realY <= 0 ? 0 : Math.Min((int)( realY * _invCellHeight ), _numRows - 1);
+            return Math.Clamp((int)( realY * _invCellHeight ), 0, _numRows - 1);
         }
 
         // Returns the grid cell X index for the specified position.
@@ -252,7 +253,7 @@ namespace DragonSpace.Grids
         private int GridLocalToCellCol(float x)
         {
             var realX = x - offsetX;
-            return realX <= 0 ? 0 : Math.Min((int)( realX * _invCellWidth ), _numCols - 1);
+            return Math.Clamp((int)( realX * _invCellWidth ), 0, _numCols - 1);
         }
 
         //TODO: move somewhere more useful
